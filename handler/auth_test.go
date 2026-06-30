@@ -22,6 +22,10 @@ func (m mockAuthService) EmailRegister(ctx context.Context, cmd service.EmailReg
 	return m.emailRegisterFn(ctx, cmd)
 }
 
+func (m mockAuthService) VerifyEmail(ctx context.Context, cmd service.VerifyEmailCommand) error {
+	return nil
+}
+
 // Test the sign up page
 func TestAuthHandlerSignUp(t *testing.T) {
 	h := NewAuthHandler(mockAuthService{})

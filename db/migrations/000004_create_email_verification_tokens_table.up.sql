@@ -5,7 +5,8 @@ token_hash TEXT NOT NULL,
 expires_at TIMESTAMP NOT NULL,
 created_at TIMESTAMP NOT NULL DEFAULT now(),
 
-UNIQUE(user_id)
+UNIQUE(user_id),
+UNIQUE(token_hash)
 );
 
 ALTER TABLE users

@@ -18,6 +18,14 @@ type Account struct {
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
 }
 
+type EmailVerificationToken struct {
+	ID        pgtype.UUID      `json:"id"`
+	UserID    pgtype.UUID      `json:"user_id"`
+	TokenHash string           `json:"token_hash"`
+	ExpiresAt pgtype.Timestamp `json:"expires_at"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
 type Session struct {
 	Token  string             `json:"token"`
 	Data   []byte             `json:"data"`
@@ -25,9 +33,10 @@ type Session struct {
 }
 
 type User struct {
-	ID           pgtype.UUID      `json:"id"`
-	Name         pgtype.Text      `json:"name"`
-	PrimaryEmail pgtype.Text      `json:"primary_email"`
-	CreatedAt    pgtype.Timestamp `json:"created_at"`
-	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
+	ID            pgtype.UUID      `json:"id"`
+	Name          pgtype.Text      `json:"name"`
+	PrimaryEmail  pgtype.Text      `json:"primary_email"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+	EmailVerified bool             `json:"email_verified"`
 }

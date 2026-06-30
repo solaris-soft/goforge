@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"strings"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/jackc/pgx/v5"
@@ -20,15 +22,6 @@ import (
 type User struct {
 	Name  string
 	Email string
-}
-
-// AuthStore is the required data layer for the AuthService
-type AuthStore interface {
-	CreateAccount(ctx context.Context, arg store.CreateAccountParams) (store.Account, error)
-	CreateUser(ctx context.Context, arg store.CreateUserParams) (store.User, error)
-	GetUserAccounts(ctx context.Context, userID pgtype.UUID) ([]store.Account, error)
-	GetUserById(ctx context.Context, id pgtype.UUID) (store.User, error)
-	GetUserByEmail(ctx context.Context, email pgtype.Text) (store.User, error)
 }
 
 // Mailer is a client capable of sending emails
@@ -47,27 +40,18 @@ type TxBeginner interface {
 }
 
 type Auth struct {
-	inTx   func(context.Context, func(AuthStore) error) error
-	mailer Mailer
-	appURL string
+	queries *store.Queries
+	txdb    TxBeginner
+	mailer  Mailer
+	appURL  string
 }
 
 func NewAuthService(queries *store.Queries, txdb TxBeginner, mailer Mailer, appURL string) Auth {
 	return Auth{
-		inTx: func(ctx context.Context, fn func(AuthStore) error) error {
-			tx, err := txdb.Begin(ctx)
-			if err != nil {
-				return err
-			}
-			defer tx.Rollback(ctx)
-
-			if err := fn(queries.WithTx(tx)); err != nil {
-				return err
-			}
-			return tx.Commit(ctx)
-		},
-		mailer: mailer,
-		appURL: appURL,
+		queries: queries,
+		txdb:    txdb,
+		mailer:  mailer,
+		appURL:  appURL,
 	}
 }
 
@@ -81,47 +65,70 @@ func (a Auth) EmailRegister(ctx context.Context, cmd EmailRegisterCommand) (User
 	if err != nil {
 		return User{}, err
 	}
+
+	verificationToken, err := generateToken()
+	if err != nil {
+		return User{}, err
+	}
+
 	var user store.User
 
-	// Create user and user's account in transaction
-	err = a.inTx(ctx, func(db AuthStore) error {
-		// Create the user
-		createdUser, err := db.CreateUser(ctx, store.CreateUserParams{
-			Name: pgtype.Text{
-				String: cmd.Name,
-				Valid:  true,
-			},
-			PrimaryEmail: pgtype.Text{
-				String: cmd.Email,
-				Valid:  true,
-			},
-		})
-		if err != nil {
-			return err
-		}
+	// Complete registration process as transaction to ensure all components complete
+	tx, err := a.txdb.Begin(ctx)
+	if err != nil {
+		return User{}, err
+	}
+	defer tx.Rollback(ctx)
 
-		// Create the user account
-		_, err = db.CreateAccount(ctx, store.CreateAccountParams{
-			UserID:   createdUser.ID,
-			Provider: "email",
-			PasswordHash: pgtype.Text{
-				String: passwordHash,
-				Valid:  true,
-			},
-		})
-		if err != nil {
-			return err
-		}
-
-		user = createdUser
-		return nil
+	// Create the user
+	db := a.queries.WithTx(tx)
+	createdUser, err := db.CreateUser(ctx, store.CreateUserParams{
+		Name: pgtype.Text{
+			String: cmd.Name,
+			Valid:  true,
+		},
+		PrimaryEmail: pgtype.Text{
+			String: cmd.Email,
+			Valid:  true,
+		},
 	})
 	if err != nil {
 		return User{}, err
 	}
 
+	// Create the user's account with email/password provider
+	_, err = db.CreateAccount(ctx, store.CreateAccountParams{
+		UserID:   createdUser.ID,
+		Provider: "email",
+		PasswordHash: pgtype.Text{
+			String: passwordHash,
+			Valid:  true,
+		},
+	})
+	if err != nil {
+		return User{}, err
+	}
+
+	// Create an email verification token record
+	_, err = db.CreateEmailVerification(ctx, store.CreateEmailVerificationParams{
+		UserID:    createdUser.ID,
+		TokenHash: hashToken(verificationToken),
+		ExpiresAt: pgtype.Timestamp{
+			Time:  time.Now().Add(24 * time.Hour),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return User{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return User{}, err
+	}
+	user = createdUser
+
 	// Send email verification request
-	err = a.sendRegisterEmail(ctx, user)
+	err = a.sendRegisterEmail(ctx, user, verificationToken)
 	if err != nil {
 		return User{}, err
 	}
@@ -133,39 +140,48 @@ func (a Auth) EmailRegister(ctx context.Context, cmd EmailRegisterCommand) (User
 		nil
 }
 
-// Generates the URL for verifying an email
-func (a Auth) generateEmailVerificationURL(user store.User) (token string, err error) {
-	rawToken, err := generateToken()
-	if err != nil {
-		return "", err
+// VerifyEmail marks the user for a valid email verification token as verified.
+func (a Auth) VerifyEmail(ctx context.Context, cmd VerifyEmailCommand) error {
+	token := strings.TrimSpace(cmd.Token)
+	if token == "" {
+		return FieldErrors{"token": "Token required"}
 	}
-	hash := hashToken(rawToken)
+
+	verification, err := a.queries.GetEmailByToken(ctx, hashToken(token))
+	if err != nil {
+		return err
+	}
+	user, err := a.queries.GetUserById(ctx, verification.UserID)
+	if err != nil {
+		return err
+	}
+	return a.queries.MarkEmailVerified(ctx, user.PrimaryEmail)
+}
+
+// Generates the URL for verifying an email.
+func (a Auth) generateEmailVerificationURL(token string) string {
 	return fmt.Sprintf(
 		"%s/verify?token=%s",
-		a.appURL,
-		hash,
-	), nil
+		strings.TrimRight(a.appURL, "/"),
+		token,
+	)
 }
 
 // sendRegisterEmail sends an email for a user to verify their email
-func (a Auth) sendRegisterEmail(ctx context.Context, user store.User) error {
+func (a Auth) sendRegisterEmail(ctx context.Context, user store.User, verificationToken string) error {
 	type RegisterEmailData struct {
 		Name            string
 		VerificationURL string
 	}
 
-	tmpl, err := template.ParseFiles("views/emails/register.html")
+	tmpl, err := template.ParseFiles("view/emails/register.html")
 	if err != nil {
 		return err
 	}
 	var body bytes.Buffer
-	url, err := a.generateEmailVerificationURL(user)
-	if err != nil {
-		return err
-	}
 	err = tmpl.Execute(&body, RegisterEmailData{
 		Name:            user.Name.String,
-		VerificationURL: url,
+		VerificationURL: a.generateEmailVerificationURL(verificationToken),
 	})
 	if err != nil {
 		return err

@@ -78,6 +78,7 @@ func main() {
 	authController := handler.NewAuthHandler(authService)
 	router.Get("/signup", handler.Make(authController.SignUp))
 	router.Post("/signup", handler.Make(authController.PostSignUp))
+	router.Get("/verify", handler.Make(authController.Verify))
 
 	// Static files
 	filesDir := http.Dir("public")

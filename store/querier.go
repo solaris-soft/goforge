@@ -12,10 +12,13 @@ import (
 
 type Querier interface {
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
+	CreateEmailVerification(ctx context.Context, arg CreateEmailVerificationParams) (EmailVerificationToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetEmailByToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetUserAccounts(ctx context.Context, userID pgtype.UUID) ([]Account, error)
 	GetUserByEmail(ctx context.Context, primaryEmail pgtype.Text) (User, error)
 	GetUserById(ctx context.Context, id pgtype.UUID) (User, error)
+	MarkEmailVerified(ctx context.Context, primaryEmail pgtype.Text) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -48,7 +48,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, primary_email) 
     VALUES ($1, $2)
-RETURNING id, name, primary_email, created_at, updated_at
+RETURNING id, name, primary_email, created_at, updated_at, email_verified
 `
 
 type CreateUserParams struct {
@@ -65,6 +65,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PrimaryEmail,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }
@@ -103,7 +104,7 @@ func (q *Queries) GetUserAccounts(ctx context.Context, userID pgtype.UUID) ([]Ac
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, primary_email, created_at, updated_at FROM users
+SELECT id, name, primary_email, created_at, updated_at, email_verified FROM users
 WHERE primary_email = $1
 `
 
@@ -116,12 +117,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, primaryEmail pgtype.Text) 
 		&i.PrimaryEmail,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, name, primary_email, created_at, updated_at FROM users
+SELECT id, name, primary_email, created_at, updated_at, email_verified FROM users
 WHERE id = $1
 `
 
@@ -134,6 +136,7 @@ func (q *Queries) GetUserById(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.PrimaryEmail,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EmailVerified,
 	)
 	return i, err
 }

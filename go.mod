@@ -1,11 +1,9 @@
 module github.com/solaris-soft/goforge
 
-go 1.23.0
-
-toolchain go1.24.4
+go 1.25.0
 
 require (
-	github.com/a-h/templ v0.3.906
+	github.com/a-h/templ v0.3.1020
 	github.com/alexedwards/scs/pgxstore v0.0.0-20240316134038-7e11d57e8885
 	github.com/alexedwards/scs/v2 v2.8.0
 	github.com/go-chi/chi/v5 v5.1.0
@@ -30,7 +28,7 @@ require (
 	github.com/resend/resend-go/v2 v2.28.0 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 )

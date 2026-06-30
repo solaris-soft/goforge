@@ -88,3 +88,21 @@ templ LogoutForm() {
 		}
 	</form>
 }
+
+type VerifyEmailErrors struct {
+	InvalidToken bool
+}
+
+templ VerifyEmailPage(errs VerifyEmailErrors) {
+	@Layout() {
+		<div>
+			if !errs.InvalidToken {
+				<h1>Email Verified</h1>
+				<p>Your email has been verified! <a href="/signin">Sign-in!</a></p>
+			} else {
+				<h1>Something went wrong</h1>
+				<p>Your token is invalid, please contact us</p>
+			}
+		</div>
+	}
+}
