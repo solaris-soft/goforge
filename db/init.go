@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/embiem/go-web-template/data"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 
@@ -19,17 +18,11 @@ import (
 )
 
 var (
-	Queries *data.Queries
-	Pool    *pgxpool.Pool
-	Conn    *pgxpool.Conn
+	Pool *pgxpool.Pool
+	Conn *pgxpool.Conn
 )
 
 func Init() error {
-	if Queries != nil {
-		// Return error if already initialized
-		return fmt.Errorf("db already initialized")
-	}
-
 	// Run any outstanding migrations
 	m, err := migrate.New(
 		"file://db/migrations",
@@ -53,13 +46,11 @@ func Init() error {
 	if err != nil {
 		return fmt.Errorf("failed opening connection to postgres: %v", err)
 	}
-
-	Queries = data.New(Conn)
+	Conn.Release()
 
 	return nil
 }
 
 func Teardown() {
-	Conn.Release()
 	Pool.Close()
 }

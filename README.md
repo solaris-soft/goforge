@@ -1,14 +1,8 @@
 # Go Web Template
 
-This is my (embiem's) favorite Go web stack at the time of making.
+Josh's preferred golang fullstack template
 
-I use this to start new web projects quickly and will likely change this template over time.
-
-## Note on Security
-
-The simple password auth in this template is just to get going and should be replaced with a more secure approach or additional best practices, before going to production. Always reference the [OWASP Top 10](https://owasp.org/www-project-top-ten/) list to ensure you're building a secure app.
-
-## Prerequisites
+Prerequisites
 
 - install Go (version 1.23.1)
 - install [migrate CLI](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate)

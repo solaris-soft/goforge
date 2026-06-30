@@ -4,7 +4,7 @@ type SignupInputErrors struct {
 	PreviousName  string
 	EmptyName     bool
 	EmptyPassword bool
-	UsernameTaken bool
+	EmailTaken    bool
 }
 
 templ SignupPage() {
@@ -22,7 +22,7 @@ templ SignupForm(errors SignupInputErrors) {
 		if errors.EmptyName {
 			<div style="font-color:red;">Please enter a username!</div>
 		}
-		if errors.UsernameTaken {
+		if errors.EmailTaken {
 			<div style="font-color:red;">This username is unavailable!</div>
 		}
 		<input name="password" type="password" placeholder="Your pasword"/>

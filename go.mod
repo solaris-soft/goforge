@@ -1,4 +1,4 @@
-module github.com/embiem/go-web-template
+module github.com/solaris-soft/goforge
 
 go 1.23.0
 
@@ -18,13 +18,19 @@ require (
 )
 
 require (
+	github.com/alexedwards/argon2id v1.0.0 // indirect
+	github.com/go-chi/cors v1.2.2 // indirect
+	github.com/gorilla/csrf v1.7.3 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
+	github.com/resend/resend-go/v2 v2.28.0 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 )

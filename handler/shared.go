@@ -16,8 +16,7 @@ func Make(h func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 type AccountProvider string
 
 const (
-	PasswordProvider AccountProvider = "password"
-	GoogleProvider   AccountProvider = "google"
+	EmailProvider AccountProvider = "email"
 )
 
 type SessionKey string

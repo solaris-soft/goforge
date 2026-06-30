@@ -1,5 +1,5 @@
 -- name: CreateUser :one
-INSERT INTO users (username, primary_email) 
+INSERT INTO users (name, primary_email) 
     VALUES ($1, $2)
 RETURNING *;
 
@@ -13,10 +13,11 @@ VALUES (
 SELECT * FROM users
 WHERE id = $1;
 
--- name: GetUserByUsername :one
+-- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE username = $1;
+WHERE primary_email = $1;
 
 -- name: GetUserAccounts :many
 SELECT * FROM accounts
 WHERE user_id = $1;
+

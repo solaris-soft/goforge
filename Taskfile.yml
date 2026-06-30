@@ -1,0 +1,41 @@
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  dev:
+    desc: Run the dev server with air
+    cmds:
+      - air
+
+  docker:up:
+    desc: Start local Docker services
+    cmds:
+      - docker compose up -d
+
+  docker:down:
+    desc: Stop local Docker services
+    cmds:
+      - docker compose down
+
+  migrate:up:
+    desc: Run database migrations up
+    cmds:
+      - migrate -database "$DATABASE_URL" -path db/migrations up
+
+  migrate:down:
+    desc: Run database migrations down
+    cmds:
+      - migrate -database "$DATABASE_URL" -path db/migrations down
+
+  migrate:create:
+    desc: "Create a new migration (usage: task migrate:create NAME=migration_name)"
+    requires:
+      vars: [NAME]
+    cmds:
+      - migrate create -ext sql -dir db/migrations -seq {{.NAME}}
+
+  sqlc:
+    desc: Generate sqlc code
+    cmds:
+      - sqlc generate
